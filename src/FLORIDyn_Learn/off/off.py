@@ -302,6 +302,7 @@ class OFF:
 
             # ///////////////////// CONTROL ///////////////////////
             self.controller.update(t)
+            # !!! I want to change something here !!!
             for idx, tur in enumerate(self.wind_farm.turbines):
                 lg.debug("Turbine %s states before control-> yaw = %s deg, ax ind = %s." %
                          (idx, tur.turbine_states.get_current_yaw(), tur.turbine_states.get_current_ax_ind()))
