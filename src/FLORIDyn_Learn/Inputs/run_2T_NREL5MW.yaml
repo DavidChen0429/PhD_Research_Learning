@@ -1,0 +1,426 @@
+# 2-Turbine FLORIDyn test case with NREL 5MW turbines
+# Two NREL 5MW turbines in a row, 5D spacing, constant wind from west
+
+sim:
+  name: 2-turbine NREL 5MW
+  description: Two NREL 5MW turbines at 5D, constant 12 m/s wind from 270 deg
+
+  sim:
+    time step: 4.0
+    time start: 0.0
+    time end: 120.0
+
+  logging:
+    console:
+      enable: true
+      level: WARNING
+    file:
+      enable: true
+      level: WARNING
+
+io:
+  data folder: ''
+  simulation folder:
+
+# Wind farm: 2 NREL 5MW turbines in a row at 5D spacing
+wind_farm:
+  name: 2-turbine NREL 5MW array
+  description: Two NREL 5MW turbines at 5D distance
+
+  farm:
+    layout_x:
+      - 0.0
+      - 5.0
+    layout_y:
+      - 0.0
+      - 0.0
+    layout_z:
+      - 0.0
+      - 0.0
+    turbine_type:
+      - nrel_5MW
+      - nrel_5MW
+    unit:
+      - D
+    diameter:
+      - 125.88
+    boundaries_xyz:
+      - -2.0
+      - 8.0
+      - -3.0
+      - 3.0
+      - 0.0
+      - 3.0
+
+# Constant wind conditions: 12 m/s from 270 deg
+ambient:
+  name: ambient_conditions
+  description: Constant wind speed at 12 m/s from 270 deg
+
+  flow_field:
+    air_density: 1.225
+    reference_wind_height: 90.0
+    turbulence_intensities:
+      - 0.06
+    wind_directions:
+      - 270.0
+    wind_directions_t:
+      - 0.0
+    wind_shear: 0.12
+    wind_speeds:
+      - 12.0
+    wind_speeds_t:
+      - 0.0
+    wind_veer: 0.0
+    corr_overwrite_direction: true
+
+# Wake solver: Temporary Wind Farm with FLORIS GCH
+solver:
+  name: TWF FLORIS
+  description: FLORIDyn TWF solver with FLORIS GCH wake model
+
+  settings:
+    wake_solver: "TWFSolver"
+    wake_model: "FLORIS GCH"
+    op_propagation: "frozen turbulence"
+    extrapolation: "pair"
+    n_op: 200
+
+# Wake model: FLORIS GCH - paths relative to OFF_PATH
+wake:
+  name: GCH
+  description: Gaussian Curl Hybrid wake model
+
+  settings:
+    yaml_path: "FLORIDyn_Learn/Inputs/FLORIS/not_relevant.yaml"
+    floris_logging: "FLORIDyn_Learn/Inputs/FLORIS/warning_none.yaml"
+    floris_solver: "FLORIDyn_Learn/Inputs/FLORIS/turbine_grid_3.yaml"
+    floris_wake: "FLORIDyn_Learn/Inputs/FLORIS/gch.yaml"
+    nRP: 10
+    rotor discretization: Isocell
+
+# Prescribed yaw controller: both turbines aligned with wind
+controller:
+  name: prescribed yaw controller
+  description: Prescribed yaw angles for 2 NREL 5MW turbines
+
+  settings:
+    ctl: "prescribed yaw controller"
+    input_method: "yaml"
+    orientation: False
+    path_to_orientation_csv: "/_.csv"
+    orientation_deg:
+      - [270, 270]
+      - [270, 270]
+    orientation_t:
+      - 0.0
+      - 90000.0
+
+# NREL 5MW turbine data
+# Cp computed from FLORIS power table: Cp = P / (0.5 * rho * A * V^3)
+# Ct taken directly from FLORIS thrust_coefficient table
+turbine:
+  nrel_5MW:
+    name: NREL 5MW Reference Wind Turbine
+    performance:
+      rated_power: 5000000
+      rated_wind_speed: 11.4
+      cutin_wind_speed: 3.0
+      cutout_wind_speed: 25.0
+      Cp_curve:
+        Cp_tb_values: [ ]
+        Cp_tb_tsr: [ ]
+        Cp_tb_bpa: [ ]
+        Cp_u_values:
+          - 0.0
+          - 0.0
+          - 0.196868
+          - 0.364191
+          - 0.423892
+          - 0.447972
+          - 0.454059
+          - 0.454227
+          - 0.454286
+          - 0.454353
+          - 0.454290
+          - 0.454222
+          - 0.454141
+          - 0.454071
+          - 0.453951
+          - 0.453865
+          - 0.453816
+          - 0.453225
+          - 0.452383
+          - 0.452290
+          - 0.452198
+          - 0.452020
+          - 0.451796
+          - 0.451538
+          - 0.451227
+          - 0.450916
+          - 0.450527
+          - 0.450118
+          - 0.449692
+          - 0.449247
+          - 0.448782
+          - 0.448225
+          - 0.442737
+          - 0.431288
+          - 0.420230
+          - 0.409546
+          - 0.399222
+          - 0.389242
+          - 0.379592
+          - 0.298559
+          - 0.239043
+          - 0.194351
+          - 0.160140
+          - 0.133510
+          - 0.112472
+          - 0.095631
+          - 0.081992
+          - 0.070828
+          - 0.061602
+          - 0.053911
+          - 0.047449
+          - 0.041980
+          - 0.0
+          - 0.0
+        Cp_u_wind_speeds:
+          - 0.0
+          - 2.9
+          - 3.0
+          - 4.0
+          - 5.0
+          - 6.0
+          - 7.0
+          - 7.1
+          - 7.2
+          - 7.3
+          - 7.4
+          - 7.5
+          - 7.6
+          - 7.7
+          - 7.8
+          - 7.9
+          - 8.0
+          - 9.0
+          - 10.0
+          - 10.1
+          - 10.2
+          - 10.3
+          - 10.4
+          - 10.5
+          - 10.6
+          - 10.7
+          - 10.8
+          - 10.9
+          - 11.0
+          - 11.1
+          - 11.2
+          - 11.3
+          - 11.4
+          - 11.5
+          - 11.6
+          - 11.7
+          - 11.8
+          - 11.9
+          - 12.0
+          - 13.0
+          - 14.0
+          - 15.0
+          - 16.0
+          - 17.0
+          - 18.0
+          - 19.0
+          - 20.0
+          - 21.0
+          - 22.0
+          - 23.0
+          - 24.0
+          - 25.0
+          - 25.1
+          - 50.0
+      Ct_curve:
+        Ct_tb_values: [ ]
+        Ct_tb_tsr: [ ]
+        Ct_tb_bpa: [ ]
+        Ct_u_values:
+          - 0.0
+          - 0.0
+          - 1.132034888
+          - 0.999470963
+          - 0.917697381
+          - 0.860849503
+          - 0.815371198
+          - 0.811614904
+          - 0.807939328
+          - 0.80443352
+          - 0.800993851
+          - 0.79768116
+          - 0.794529244
+          - 0.791495834
+          - 0.788560434
+          - 0.787217182
+          - 0.787127977
+          - 0.785839257
+          - 0.783812219
+          - 0.783568108
+          - 0.783328285
+          - 0.781194418
+          - 0.777292539
+          - 0.773464375
+          - 0.769690236
+          - 0.766001924
+          - 0.762348072
+          - 0.758760824
+          - 0.755242872
+          - 0.751792927
+          - 0.748434131
+          - 0.745113997
+          - 0.717806682
+          - 0.672204789
+          - 0.63831272
+          - 0.610176496
+          - 0.585456847
+          - 0.563222111
+          - 0.542912273
+          - 0.399312061
+          - 0.310517829
+          - 0.248633226
+          - 0.203543725
+          - 0.169616419
+          - 0.143478955
+          - 0.122938861
+          - 0.106515296
+          - 0.093026095
+          - 0.081648606
+          - 0.072197368
+          - 0.064388275
+          - 0.057782745
+          - 0.0
+          - 0.0
+        Ct_u_wind_speeds:
+          - 0.0
+          - 2.9
+          - 3.0
+          - 4.0
+          - 5.0
+          - 6.0
+          - 7.0
+          - 7.1
+          - 7.2
+          - 7.3
+          - 7.4
+          - 7.5
+          - 7.6
+          - 7.7
+          - 7.8
+          - 7.9
+          - 8.0
+          - 9.0
+          - 10.0
+          - 10.1
+          - 10.2
+          - 10.3
+          - 10.4
+          - 10.5
+          - 10.6
+          - 10.7
+          - 10.8
+          - 10.9
+          - 11.0
+          - 11.1
+          - 11.2
+          - 11.3
+          - 11.4
+          - 11.5
+          - 11.6
+          - 11.7
+          - 11.8
+          - 11.9
+          - 12.0
+          - 13.0
+          - 14.0
+          - 15.0
+          - 16.0
+          - 17.0
+          - 18.0
+          - 19.0
+          - 20.0
+          - 21.0
+          - 22.0
+          - 23.0
+          - 24.0
+          - 25.0
+          - 25.1
+          - 50.0
+    generator_efficiency: 1.0
+    hub_height: 90.0
+    pP: 1.88
+    pT: 1.88
+    rotor_diameter: 125.88
+    TSR: 8.0
+    ref_density_cp_ct: 1.225
+    ref_tilt_cp_ct: 5.0
+    turbine_type: HAWT
+    installation: fixed
+    rotor_overhang: 5.0
+    shaft_tilt: 5.0
+    yaw_rate_lim: 0.3
+
+# Visualization: disabled for fast testing
+vis:
+  grid:
+    generate: False
+    boundaries:
+      - [ -2, 8]
+      - [ -3, 3]
+      - [ 0, 3]
+    unit:
+      - D
+    diameter:
+      - 125.88
+    resolution: [ 201, 101, 5 ]
+    volume_3d: False
+    slice_2d: False
+    slice_2d_xy: [ 90.0 ]
+    slice_2d_xz: [ ]
+    slice_2d_yz: [ ]
+    slice_2d_p:
+      - [ ]
+    slice_2d_n:
+      - [ ]
+    data_vel_background: False
+    data_vel_effective: False
+    data_dir_background: False
+    data_ti_background: False
+    data_ti_effective: False
+    data_op_markers: False
+
+  turbine:
+    generate: False
+    plot_together: False
+    plot_seperated: False
+    plot_selection: False
+    input_yaw: False
+    input_Ct: False
+    output_Power: False
+    output_EffU: False
+    output_Red: False
+    farm_interaction: False
+    farm_layout: False
+    store_data: False
+
+  debug:
+    effective_wf_tile: False
+    effective_wf_tile_5color: False
+    effective_wf_layout: False
+    time: [ ]
+    iT: [0, 1]
+    turbine_effective_wind_speed: False
+    turbine_effective_wind_speed_plot: False
+    turbine_effective_wind_speed_plot_ops: False
+    turbine_effective_wind_speed_show_plot: False
+    turbine_effective_wind_speed_store_plot: False
+    turbine_effective_wind_speed_store_data: False
