@@ -493,15 +493,15 @@ class DynamicYawController(Controller):
         """
         turbines = self.wind_farm.turbines
 
-        if self.control_fn is not None:
+        if self.control_fn is not None:                                         # if control function provided, call it to get yaw commands for each turbine
             yaw_commands = self.control_fn(turbines, t)
-            for i, turbine in enumerate(turbines):
+            for i, turbine in enumerate(turbines):                              # Give yaw commands to each turbine
                 wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
                 self.orientation_commands[i] = wind_dir - yaw_commands[i]
-        else:
+        else:                                                                   # else default to zero yaw misalignment (nacelle faces wind direction)
             for i, turbine in enumerate(turbines):
                 wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
-                self.orientation_commands[i] = wind_dir   # zero yaw misalignment
+                self.orientation_commands[i] = wind_dir                         # zero yaw misalignment
 
     def __call__(self, turbine: tur, i_t: int, time_step: float) -> tur:
         """

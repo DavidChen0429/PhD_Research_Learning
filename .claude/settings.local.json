@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(del /s /q \"D:\\\\2_PhD_UBC\\\\PhD_Research_Learning\\\\src\\\\examplesFLORIS\\\\*.ipynb\")",
-      "Bash(powershell -Command \"Get-ChildItem -Path ''D:\\\\2_PhD_UBC\\\\PhD_Research_Learning\\\\src\\\\examplesFLORIS'' -Recurse -Filter ''*.ipynb'' | Remove-Item -Force\")"
+      "Bash(powershell -Command \"Get-ChildItem -Path ''D:\\\\2_PhD_UBC\\\\PhD_Research_Learning\\\\src\\\\examplesFLORIS'' -Recurse -Filter ''*.ipynb'' | Remove-Item -Force\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
