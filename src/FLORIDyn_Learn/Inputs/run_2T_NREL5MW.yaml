@@ -99,22 +99,14 @@ wake:
     nRP: 10
     rotor discretization: Isocell
 
-# Prescribed yaw controller: both turbines aligned with wind
+# Dynamic yaw controller: orientation commands are computed each timestep in update()
 controller:
-  name: prescribed yaw controller
-  description: Prescribed yaw angles for 2 NREL 5MW turbines
+  name: dynamic yaw controller
+  description: Dynamic yaw controller for 2 NREL 5MW turbines
 
   settings:
-    ctl: "prescribed yaw controller"
-    input_method: "yaml"
-    orientation: False
-    path_to_orientation_csv: "/_.csv"
-    orientation_deg:
-      - [270, 270]
-      - [270, 270]
-    orientation_t:
-      - 0.0
-      - 30000.0
+    ctl: "dynamic yaw controller"
+    initial_orientation_deg: 270.0   # starting orientation for all turbines [deg]
 
 # NREL 5MW turbine data
 # Cp computed from FLORIS power table: Cp = P / (0.5 * rho * A * V^3)

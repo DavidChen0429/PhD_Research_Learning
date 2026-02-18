@@ -443,6 +443,95 @@ class YawSteeringPrescribedMotionController(Controller):
         pass
 
 
+class DynamicYawController(Controller):
+    """
+    Dynamic yaw controller: computes orientation commands once per timestep.
+
+    Override update() with your control algorithm. The results are stored in
+    self.orientation_commands[i] (one entry per turbine) and applied by __call__.
+
+    Useful state available inside update():
+        self.wind_farm.turbines[i].ambient_states.get_wind_dir_ind(0)   -> wind direction [deg]
+        self.wind_farm.turbines[i].ambient_states.get_turbine_wind_speed_abs() -> wind speed [m/s]
+        self.wind_farm.turbines[i].get_yaw_orientation()                -> current orientation [deg]
+        self.wind_farm.turbines[i].calc_yaw(wind_dir)                   -> current yaw misalignment [deg]
+    """
+
+    def __init__(self, settings: dict, wind_farm):
+        super(DynamicYawController, self).__init__(settings)
+        self.wind_farm = wind_farm
+        n_turbines = len(wind_farm.turbines)
+        init_ori = float(settings.get('initial_orientation_deg', 270.0))
+        self.orientation_commands = np.full(n_turbines, init_ori)
+        self.control_fn = None   # optional callback set from main.py
+        lg.info('Dynamic yaw controller created.')
+
+    def set_control_fn(self, fn):
+        """
+        Attach a control callback defined externally (e.g. in main.py).
+
+        The function signature must be:
+            fn(turbines: list, t: float) -> list[float]
+
+        where the return value is a list of desired yaw misalignment angles [deg]
+        for each turbine (positive = nacelle rotates clockwise away from wind).
+
+        Example
+        -------
+            def my_control(turbines, t):
+                return [20.0, 0.0]   # steer T0 by 20 deg, keep T1 aligned
+
+            oi.off_sim.controller.set_control_fn(my_control)
+        """
+        self.control_fn = fn
+
+    def update(self, t: float):
+        """
+        Called ONCE per timestep before per-turbine control is applied.
+        If a callback was set via set_control_fn(), it is called here.
+        Otherwise falls back to zero yaw misalignment for all turbines.
+        """
+        turbines = self.wind_farm.turbines
+
+        if self.control_fn is not None:
+            yaw_commands = self.control_fn(turbines, t)
+            for i, turbine in enumerate(turbines):
+                wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
+                self.orientation_commands[i] = wind_dir - yaw_commands[i]
+        else:
+            for i, turbine in enumerate(turbines):
+                wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
+                self.orientation_commands[i] = wind_dir   # zero yaw misalignment
+
+    def __call__(self, turbine: tur, i_t: int, time_step: float) -> tur:
+        """
+        Apply the orientation command computed in update() to this turbine.
+
+        Parameters
+        ----------
+        turbine : Turbine
+        i_t : int
+            Turbine index
+        time_step : float
+            Current simulation time [s]
+        """
+        wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
+        turbine.set_orientation_yaw(self.orientation_commands[i_t], wind_dir)
+
+    def get_applied_settings(self, turbine: tur, i_t: int, time_step: float) -> pd.DataFrame:
+        control_settings = pd.DataFrame(
+            [[
+                i_t,
+                turbine.calc_yaw(turbine.ambient_states.get_wind_dir_ind(0)),
+                turbine.orientation[0],
+                self.orientation_commands[i_t],
+                time_step
+            ]],
+            columns=['t_idx', 'yaw', 'orientation', 'commanded_orientation', 'time']
+        )
+        return control_settings
+
+
 class YawSteeringFilteredPrescribedMotionController(Controller):
     """
     Applies prescribed yaw trajectories to the turbines, but filters and applies the hysteresis control

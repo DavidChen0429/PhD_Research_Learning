@@ -75,6 +75,8 @@ class OFF:
             self.controller = ctr.YawSteeringFilteredPrescribedMotionController(settings_ctr)
         elif settings_ctr["ctl"] == "prescribed yaw controller":
             self.controller = ctr.YawSteeringPrescribedMotionController(settings_ctr)
+        elif settings_ctr["ctl"] == "dynamic yaw controller":
+            self.controller = ctr.DynamicYawController(settings_ctr, self.wind_farm)
         elif settings_ctr["ctl"] == "LUT yaw controller":
             self.controller = ctr.YawSteeringLUTController(settings_ctr)
         elif settings_ctr["ctl"] == "Dead-band LUT yaw controller":

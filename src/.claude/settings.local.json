@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c:*)",
+      "Bash(conda run -n floridyn python:*)",
+      "Bash(conda env list:*)",
+      "Bash(conda run -n Floris python:*)",
+      "Bash(/c/Users/chenz/miniconda3/envs/Floris/python.exe:*)",
+      "Bash(PYTHONIOENCODING=utf-8 /c/Users/chenz/miniconda3/envs/Floris/python.exe:*)"
+    ]
+  }
+}

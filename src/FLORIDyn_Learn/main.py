@@ -14,6 +14,40 @@ logging.basicConfig(level=logging.ERROR)
 import off.off as off
 import off.off_interface as offi
 
+def my_control(turbines, t):
+    """
+    Define your yaw control logic here.
+
+    Parameters
+    ----------
+    turbines : list
+        List of Turbine objects. Useful state per turbine:
+            turbine.ambient_states.get_wind_dir_ind(0)          -> wind direction [deg]
+            turbine.ambient_states.get_turbine_wind_speed_abs() -> wind speed [m/s]
+            turbine.get_yaw_orientation()                       -> current orientation [deg]
+            turbine.calc_yaw(wind_dir)                          -> current yaw misalignment [deg]
+    t : float
+        Current simulation time [s]
+
+    Returns
+    -------
+    list[float]
+        Desired yaw misalignment [deg] for each turbine.
+        Positive = nacelle rotates clockwise away from wind.
+    """
+    yaw_commands = []
+    if t < 20.0:
+        # First 30s: no yawing, let wakes develop
+        yaw_commands = [0.0 for _ in turbines]
+    else:
+        for i, turbine in enumerate(turbines):
+            if i == 0:
+                yaw_commands.append(20.0)   # steer T0 wake by 20 deg
+            else:
+                yaw_commands.append(0.0)   # keep T1 aligned with wind
+    return yaw_commands
+
+
 def main():
     start_time = time.time()
 
@@ -24,6 +58,9 @@ def main():
     # Options: 'run_2T.yaml' (IEA 10MW) or 'run_2T_NREL5MW.yaml' (NREL 5MW)
     config_path = os.path.join(os.path.dirname(__file__), 'Inputs', 'run_2T_NREL5MW.yaml')
     oi.init_simulation_by_path(config_path)
+
+    # --- Step 1b: Attach your control function ---
+    oi.off_sim.controller.set_control_fn(my_control)
 
     # --- Step 2: Run the dynamic simulation ---
     print("Running FLORIDyn simulation (2 turbines, 120s)...")
