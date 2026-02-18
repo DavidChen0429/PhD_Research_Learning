@@ -10,15 +10,18 @@ A working sandbox for running and controlling **FLORIDyn** (OFF — Open-source 
 FLORIDyn_Learn/
 ├── main.py                  ← Entry point. Write your control logic here.
 ├── Inputs/
-│   ├── run_2T_NREL5MW.yaml  ← Simulation config (2 × NREL 5 MW, 120 s)
+│   ├── run_2T_NREL5MW.yaml  ← Simulation config (2 × NREL 5 MW, 120 s)  [default]
 │   ├── run_2T.yaml          ← Alternative config (2 × IEA 10 MW)
 │   └── FLORIS/              ← FLORIS wake model config files (don't edit)
 └── off/                     ← FLORIDyn framework (don't edit unless needed)
     ├── off.py               ← Simulation engine (run_sim loop)
-    ├── off_interface.py     ← High-level API
-    ├── controller.py        ← Controller classes including DynamicYawController
-    ├── turbine.py           ← Turbine model
+    ├── off_interface.py     ← High-level API (OFFInterface)
+    ├── controller.py        ← Controller classes (see below)
+    ├── turbine.py           ← Turbine model (HAWT_ADM)
     ├── windfarm.py          ← Wind farm container
+    ├── ambient.py           ← Ambient state models
+    ├── states.py            ← Turbine state models
+    ├── utils.py             ← Coordinate utilities (ot_get_yaw, ot_get_orientation)
     └── ...
 ```
 
@@ -34,7 +37,7 @@ cd FLORIDyn_Learn
 python main.py
 ```
 
-The simulation runs for 120 s (30 × 4 s timesteps), prints per-turbine power statistics, shows a power time-series plot, and saves results to `../runs/`.
+The simulation runs for 120 s (30 × 4 s timesteps). By default, `my_control` in `main.py` holds all turbines aligned for the first 20 s, then steers T0 by 20° for the remainder. After the run it prints per-turbine power statistics, shows a power time-series plot, and saves results to `../runs/`.
 
 ---
 
@@ -97,21 +100,20 @@ def my_control(turbines, t):
     return [20.0, 0.0]
 ```
 
-**Time-scheduled step change (apply steering after 60 s):**
+**Time-scheduled step change (hold aligned for 20 s, then steer T0):**
 ```python
 def my_control(turbines, t):
-    if t < 60.0:
+    if t < 20.0:
         return [0.0, 0.0]
     else:
         return [20.0, 0.0]
 ```
 
-**Reactive control (read wind direction and respond):**
+**Reactive control (read wind speed and respond):**
 ```python
 def my_control(turbines, t):
     yaw_commands = []
     for i, turbine in enumerate(turbines):
-        wind_dir = turbine.ambient_states.get_wind_dir_ind(0)
         wind_speed = turbine.ambient_states.get_turbine_wind_speed_abs()
         if i == 0 and wind_speed > 10.0:
             yaw_commands.append(20.0)
@@ -177,7 +179,29 @@ Example (wind from 270°):
   yaw = 20°  → orientation = 250°  (steered 20° clockwise, wake deflected)
 ```
 
+The conversion happens inside `DynamicYawController.update()` at `controller.py:500`:
+```python
+self.orientation_commands[i] = wind_dir - yaw_commands[i]
+```
+
 The physical yaw rate limit is **0.3 deg/s** (NREL 5 MW spec), set in the turbine config. A 20° change takes ~67 s at full rate. In the current `DynamicYawController` the yaw rate limit is **not enforced** — commands are applied instantaneously. Add rate limiting in `controller.py` if needed.
+
+---
+
+## Available Controllers
+
+All controllers live in `off/controller.py` and inherit from the abstract `Controller` base class.
+
+| Class | Description |
+|---|---|
+| `DynamicYawController` | **Used by default.** Calls your `set_control_fn()` callback each timestep. Falls back to zero yaw misalignment if no callback is set. |
+| `IdealGreedyBaselineController` | Always aligns every turbine instantly with the local wind direction (zero yaw misalignment, no rate limit). |
+| `RealisticGreedyBaselineController` | Greedy alignment with a misalignment threshold and yaw rate limiting. |
+| `YawSteeringLUTController` | Reads optimised yaw angles from a CSV look-up table keyed by wind direction. |
+| `YawSteeringPrescribedMotionController` | Replays a pre-computed orientation trajectory (from CSV or YAML). |
+| `DeadbandYawSteeringLuTController` | LUT-based yaw steering with a deadband + integrator trigger and yaw rate limiting. |
+
+To switch controllers, change `ctl` in the YAML config and pass the matching settings dict. Only `DynamicYawController` is wired up in `off_interface.py` for the `"dynamic yaw controller"` key.
 
 ---
 
@@ -197,7 +221,18 @@ Both are pandas DataFrames. Key columns:
 | `measurements` | `t_idx` | Turbine index (0-based) |
 | `measurements` | `time` | Simulation time [s] |
 | `measurements` | `power_OFF` | Power output [W] |
+| `control_applied` | `t_idx` | Turbine index (0-based) |
+| `control_applied` | `time` | Simulation time [s] |
 | `control_applied` | `yaw` | Applied yaw misalignment [deg] |
+| `control_applied` | `orientation` | Actual nacelle orientation [deg] |
 | `control_applied` | `commanded_orientation` | Commanded nacelle orientation [deg] |
 
-Results are also saved as CSV files to `../runs/<run_id>/`.
+Results can be saved with:
+
+```python
+oi.store_measurements()       # → <run_dir>/measurements.csv
+oi.store_applied_control()    # → <run_dir>/applied_control.csv
+oi.store_run_file()           # → <run_dir>/<config>.yaml  (copy of input)
+```
+
+Results are saved to `../runs/<run_id>/` (i.e. `src/runs/` relative to the repo root).
